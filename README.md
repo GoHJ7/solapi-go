@@ -1,8 +1,13 @@
+# hardcoded config path fixed
+Fixed the hardcoded config path in apiRequest.go where getConfigFilePath() used a static path.
+Loading file every requests fixed as well.
+Refactored the code to use a singleton struct for flexible path management.
+
 # solapi-go
 
 [Site](https://www.solapi.com/) |
 [Docs](https://docs.solapi.com/) |
-[Examples](https://github.com/solapi/solapi-go/tree/master/_examples) |
+[Examples](https://solapi-go/tree/master/_examples) |
 
 문자 메시지 발송 및 조회 관련 기능들을 쉽게 사용하실 수 있도록 만들어진 SDK 입니다.
 
@@ -10,7 +15,7 @@
 
 ```go
 require (
-        github.com/solapi/solapi-go
+        solapi-go
 )
 
 func main() {
@@ -35,12 +40,12 @@ func main() {
 }
 ```
 
-[examples folder](https://github.com/solapi/solapi-go/tree/master/_examples)에서 자세한 예제파일들을 확인하세요.
+[examples folder](https://solapi-go/tree/master/_examples)에서 자세한 예제파일들을 확인하세요.
 
 ## Installation
 
 ```
-go get github.com/solapi/solapi-go
+go get solapi-go
 ```
 
 ## Configs

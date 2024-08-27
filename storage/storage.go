@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/base64"
 	"errors"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/solapi/solapi-go/apirequest"
@@ -18,7 +18,8 @@ var (
 
 // Storage struct
 type Storage struct {
-	Config map[string]string
+	Config       map[string]string
+	ApiRequester apirequest.ApiRequester
 }
 
 // UploadFile upload a file
@@ -38,7 +39,7 @@ func (r *Storage) UploadFile(params map[string]string) (types.File, error) {
 
 	// Read entire contents into byte slice.
 	reader := bufio.NewReader(f)
-	content, err := ioutil.ReadAll(reader)
+	content, err := io.ReadAll(reader)
 	if err != nil {
 		return result, errFailToReadFile
 	}
@@ -49,11 +50,8 @@ func (r *Storage) UploadFile(params map[string]string) (types.File, error) {
 	// Print encoded data to params.
 	params["file"] = encoded
 
-	request := apirequest.NewAPIRequest()
-	setCustomConfigErr := request.SetCustomConfig(r.Config)
-	if setCustomConfigErr != nil {
-		return result, setCustomConfigErr
-	}
+	request := r.ApiRequester.NewAPIRequest()
+
 	err = request.POST("storage/v1/files", params, &result)
 	if err != nil {
 		return result, err
@@ -64,12 +62,9 @@ func (r *Storage) UploadFile(params map[string]string) (types.File, error) {
 
 // GetFileList gets the list of files
 func (r *Storage) GetFileList(params map[string]string) (types.FileList, error) {
-	request := apirequest.NewAPIRequest()
+	request := r.ApiRequester.NewAPIRequest()
 	result := types.FileList{}
-	setCustomConfigErr := request.SetCustomConfig(r.Config)
-	if setCustomConfigErr != nil {
-		return result, setCustomConfigErr
-	}
+
 	err := request.GET("storage/v1/files", params, &result)
 	if err != nil {
 		return result, err

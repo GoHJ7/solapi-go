@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/solapi/solapi-go"
+	"solapi-go"
 )
 
 func main() {

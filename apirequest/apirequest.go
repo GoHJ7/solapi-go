@@ -9,14 +9,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"runtime"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/solapi/solapi-go/types"
 )
 
@@ -26,6 +23,15 @@ var (
 	errFailedToConvertJSON   = errors.New("FailedToConvertJSON")
 	errFailedToClientRequest = errors.New("FailedToClientRequest")
 )
+
+type ApiRequester struct {
+	APIKey    string
+	APISecret string
+	Protocol  string
+	Domain    string
+	Prefix    string
+	AppId     string
+}
 
 // APIRequest api
 type APIRequest struct {
@@ -55,97 +61,26 @@ func RandomString(n int) string {
 	return hex.EncodeToString(b)
 }
 
-// Exists file check
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
-// Get config file path
-func getConfigFilePath() string {
-	pathList := [5]string{
-		"config.json",
-		"../config.json",
-		"../../config.json",
-		"../../../config.json",
-		"../../../../config.json",
-	}
-
-	_, b, _, _ := runtime.Caller(0)
-	filePath := filepath.Dir(b)
-	filePath = filepath.Join(filePath, "../config.json")
-
-	path, err := os.Getwd()
-	if err == nil {
-		for _, configPath := range pathList {
-			processFilePath := filepath.Join(path, configPath)
-			exist, _ := exists(processFilePath)
-			if exist == true {
-				filePath = processFilePath
-				break
-			}
-		}
-	}
-
-	return filePath
-}
-
 // NewAPIRequest create
-func NewAPIRequest() *APIRequest {
+func (a *ApiRequester) NewAPIRequest() *APIRequest {
 	goos := runtime.GOOS
 	goVersion := runtime.Version()
 	osPlatform := fmt.Sprintf("%s/%s", goos, goVersion)
 
-	request := APIRequest{response: "", statusCode: "", OsPlatform: osPlatform, SdkVersion: sdkVersion}
-
-	// Read File
-	filePath := getConfigFilePath()
-	file, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Fatalln("Error reading")
-		return &request
-	}
-
-	err = json.Unmarshal(file, &request)
-	fmt.Println(request)
-	if err != nil {
-		log.Fatalln("Error file Unmarshal")
-		return &request
+	request := APIRequest{
+		response:   "",
+		statusCode: "",
+		OsPlatform: osPlatform,
+		SdkVersion: sdkVersion,
+		APIKey:     a.APIKey,
+		APISecret:  a.APISecret,
+		Domain:     a.Domain,
+		Protocol:   a.Protocol,
+		Prefix:     a.Prefix,
+		AppId:      a.AppId,
 	}
 
 	return &request
-}
-
-// SetCustomConfig set custom config for request
-func (a *APIRequest) SetCustomConfig(config map[string]string) error {
-	for key, value := range config {
-		switch key {
-		case "APIKey":
-			a.APIKey = value
-			break
-		case "APISecret":
-			a.APISecret = value
-			break
-		case "Protocol":
-			a.Protocol = value
-			break
-		case "Domain":
-			a.Domain = value
-			break
-		case "Prefix":
-			a.Prefix = value
-			break
-		case "AppId":
-			a.AppId = value
-		}
-	}
-	return nil
 }
 
 // GetAuthorization gets the authorization
@@ -213,9 +148,11 @@ func (a *APIRequest) Request(method string, resource string, params interface{},
 		return errFailedToConvertJSON
 	}
 
+	logrus.Info("request: ", string(jsonString))
 	// Prepare for Http Request
 	client := &http.Client{}
 	url := fmt.Sprintf("%s://%s/%s%s", a.Protocol, a.Domain, a.Prefix, resource)
+	logrus.Info("url: ", url)
 	req, _ := http.NewRequest(method, url, bytes.NewBuffer(jsonString))
 
 	// Set Headers
